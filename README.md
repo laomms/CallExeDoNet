@@ -168,6 +168,34 @@ fun2是为了后续调用其他函数。
 ```
 然后注入dll：
 ```vb.net
+    <DllImport("kernel32.dll", EntryPoint:="CreateProcessA")>
+    Public Function CreateProcess(ByVal lpApplicationName As String, ByVal lpCommandLine As String, ByVal lpProcessAttributes As IntPtr, ByVal lpThreadAttributes As IntPtr, ByVal bInheritHandles As Boolean, ByVal dwCreationFlags As UInteger, ByVal lpEnvironment As IntPtr, ByVal lpCurrentDirectory As String, ByRef lpStartupInfo As STARTUPINFO, ByRef lpProcessInformation As PROCESS_INFORMATION) As Boolean
+    End Function
+    <DllImport("kernel32.dll")>
+    Public Function OpenProcess(ByVal dwDesiredAccess As ProcessAccessFlags, <MarshalAs(UnmanagedType.Bool)> ByVal bInheritHandle As Boolean, ByVal dwProcessId As Integer) As IntPtr
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True, CharSet:=CharSet.Ansi, ExactSpelling:=True)>
+    Public Function GetProcAddress(ByVal hModule As IntPtr, ByVal procName As String) As IntPtr
+    End Function
+    <DllImport("kernel32.dll", CharSet:=CharSet.Unicode)>
+    Public Function GetModuleHandle(ByVal lpModuleName As String) As IntPtr
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True, ExactSpelling:=True)>
+    Public Function VirtualAllocEx(ByVal hProcess As IntPtr, ByVal lpAddress As IntPtr, ByVal dwSize As IntPtr, ByVal flAllocationType As UInteger, ByVal flProtect As UInteger) As IntPtr
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Function WriteProcessMemory(ByVal hProcess As IntPtr, ByVal lpBaseAddress As IntPtr, ByVal lpBuffer() As Byte, ByVal nSize As Integer, ByRef lpNumberOfBytesWritten As IntPtr) As Boolean
+    End Function
+    <DllImport("kernel32.dll")>
+    Public Function CreateRemoteThread(ByVal hProcess As IntPtr, ByVal lpThreadAttributes As IntPtr, ByVal dwStackSize As UInteger, ByVal lpStartAddress As IntPtr, ByVal lpParameter As IntPtr, ByVal dwCreationFlags As UInteger, ByVal lpThreadId As IntPtr) As IntPtr
+    End Function
+    <DllImport("kernel32", SetLastError:=True)>
+    Function WaitForSingleObject(ByVal handle As IntPtr, ByVal milliseconds As UInt32) As UInt32
+    End Function
+    
+```
+```vb.net
+
         Dim FilePath = Environment.SystemDirectory & "\ClipUp.exe"
         Dim hRet = CreateProcess(FilePath, Nothing, pSecAttr, IntPtr.Zero, False, CREATE_SUSPENDED Or CREATE_NO_WINDOW, IntPtr.Zero, Nothing, si, pi)
         If hRet = False Then
