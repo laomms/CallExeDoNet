@@ -204,5 +204,9 @@ fun2是为了后续调用其他函数。
 ```
 CREATE_SUSPENDED是为了创建目标进程后马上挂起，CREATE_NO_WINDOW是为了运行目标进程时不显示窗口。
 注入后，上面的SharedGetCurrentEx结构体中的structHWID已经是取到的HWID结果。
-为了测试dll调用函数有没有成功，CreateProcess目标进程后，在CreateRemoteThread之前下个断点，然后在dll的调用函数处下断点，看有没有调用成功，注意的是得附加目标进程调试，否则dll调试不了，因为已经被注入到目标进程。  
-![image](https://github.com/laomms/CallExeDoNet/blob/master/01.png) 
+为了测试dll调用函数有没有成功，CreateProcess目标进程后，在CreateRemoteThread之前下个断点，然后在dll的调用函数处下断点，看有没有调用成功，注意的是得附加目标进程调试，否则dll调试不了，因为已经被注入到目标进程。dll被断下：
+![image](https://github.com/laomms/CallExeDoNet/blob/master/02.png) 
+主程序断下后的结果：
+![image](https://github.com/laomms/CallExeDoNet/blob/master/03.png) 
+
+
