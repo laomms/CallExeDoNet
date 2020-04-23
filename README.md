@@ -189,7 +189,7 @@ fun2是为了后续调用其他函数。
         Dim dwThreadId As New IntPtr
         Dim hRemoteThread = CreateRemoteThread(hHandle, IntPtr.Zero, 0, hLoadLibrary, pLibRemote, 0, dwThreadId)
         Debug.Print("注入成功!")
-        WaitForSingleObject(hRemoteThread, 2000)
+        WaitForSingleObject(hRemoteThread, 500)
 ```
 注入后，等dll执行完毕分享内存后提取共享的内存:
 
