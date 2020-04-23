@@ -44,19 +44,16 @@ DWORD64 FindPattern64(HMODULE hModule, BYTE* bMask, char* szMask)
     //GetModuleInformation(GetCurrentProcess(), GetModuleHandle(NULL), &moduleInfo, sizeof(MODULEINFO));
     DWORD64 dwBaseAddress = (DWORD64)moduleInfo.lpBaseOfDll;
     DWORD64 dwModuleSize = (DWORD64)moduleInfo.SizeOfImage;
-
     for (DWORD64 i = 0; i < dwModuleSize; i++)
     {
         if (Compare64((BYTE*)(dwBaseAddress + i), bMask, szMask))
             return (DWORD64)(dwBaseAddress + i);
     }
-
     return 0;
 }
 
 DWORD WINAPI MyThread(LPVOID)
-{
-     
+{     
     AgrGetCurrentEx funcstruct1;
     HANDLE hMapFile = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, strMapName);
     if (!hMapFile)
@@ -205,4 +202,7 @@ fun2是为了后续调用其他函数。
             Marshal.FreeHGlobal(pnt)
         End Using
 ```
+CREATE_SUSPENDED是为了创建目标进程后马上挂起，CREATE_NO_WINDOW是为了运行目标进程时不显示窗口。
 注入后，上面的SharedGetCurrentEx结构体中的structHWID已经是取到的HWID结果。
+为了测试dll调用函数有没有成功，CreateProcess目标进程后，在CreateRemoteThread之前下个断点，然后在dll的调用函数处下断点，看有没有调用成功，注意的是得附加目标进程调试，否则dll调试不了，因为已经被注入到目标进程。  
+![image](https://github.com/laomms/CallExeDoNet/blob/master/01.png) 
