@@ -14,14 +14,16 @@ struct AgrGetCurrentEx
     char structHWID[64] = {0};
     unsigned char sizeHWID[4];
 };
+#define strMapName "global_share_memory"
 ```
 vb.net中这样定义:
 ```vb.net
-    Public Structure AgrVRSAVaultSignPKCS
+    Public Structure AgrGetCurrentEx
         Public FuncFlag As Integer
-        <MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst:=32)> Public dwbyte() As Byte
-        Public dwSize As UInteger
+        <MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst:=64)> Public structHWID() As Byte
+        Public sizeHWID As UInteger
     End Structure
+    Public strMapName As String = "global_share_memory"
 ```
 dll的源码跟之前的几乎一样，只是改了调用函数的方法：
 ```c
@@ -191,4 +193,16 @@ fun2是为了后续调用其他函数。
         Debug.Print("注入成功!")
         WaitForSingleObject(hRemoteThread, 2000)
 ```
+注入后，等dll执行完毕分享内存后提取共享的内存:
 
+```vb.net
+        ShareMemory = MemoryMappedFile.OpenExisting(strMapName)
+        Using MapView = ShareMemory.CreateViewStream()
+            Dim BytesBuffer(size - 1) As Byte
+            MapView.Read(BytesBuffer, 0, size)
+            Marshal.Copy(BytesBuffer, 0, pnt, size)
+            SharedGetCurrentEx = Marshal.PtrToStructure(pnt, GetType(AgrGetCurrentEx))
+            Marshal.FreeHGlobal(pnt)
+        End Using
+```
+注入后，上面的SharedGetCurrentEx结构体中的structHWID已经是取到的HWID结果。
