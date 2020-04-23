@@ -101,8 +101,8 @@ func1:
             LocalFree(messageBuffer);
             return FALSE;
         }
-
-        typedef int(__stdcall* DelegateHwidGetCurrentEx)(unsigned __int8* , unsigned int , int**, unsigned int* , int**, unsigned int* ); //__cdecl
+        //照抄
+        typedef int(__fastcall* DelegateHwidGetCurrentEx)(unsigned __int8* , unsigned int , int**, unsigned int* , int**, unsigned int* ); //__cdecl
         DelegateHwidGetCurrentEx MyHwidGetCurrentEx = (DelegateHwidGetCurrentEx)(static_cast<long long>(pHwidGetCurrentEx));
         int* structHWID;
         unsigned int sizeHWID;
