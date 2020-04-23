@@ -6,7 +6,7 @@ IDA分析后函数的参数大概这样，而且是个stdcall，比较好弄，�
 ![image](https://github.com/laomms/CallExeDoNet/blob/master/01.png) 
 我用vb.net实现，C#和vb.net现在已经没什么区别了，用Tangible的工具互转已经几乎达到100%，不管是整个工程还是代码互转，剩下稍微手工修改几处就可以。  
 先看参数，总共6个，经过IDA调试分析，主要要得到其中的structHWID和sizeHWID，structHWID是个64位的结构体，微软没有公布这个结构体，那就拿整体来用，sizeHWID是结构体大小。  
-在这里构造一个用于传递的结构体，这里的第一个参数是备用的，用于标志调用不同的函数，比如注入后调用的不止一个函数，就用这个来区分注入时是调用哪个函数。  
+在这里构造一个用于传递的结构体，这里的第一个参数是备用的，用于标志调用不同的函数，比如注入后调用的不止一个函数，就用这个来区分注入时是调用哪个函数。其他参数没什么用，不用传递，就不写进去了。  
 ```c
 struct AgrGetCurrentEx
 {
@@ -150,3 +150,45 @@ MapFile:
     return 0;
 }
 ```
+fun2是为了后续调用其他函数。
+主程序先共享内存,由于这个函数没有输入参数，只有输出参数，所以没必须传其他的东西给DLL:
+```vb.net
+        Dim SharedGetCurrentEx As New AgrGetCurrentEx()
+        SharedGetCurrentEx.FuncFlag = 1
+        Dim size As Integer = Marshal.SizeOf(SharedGetCurrentEx)
+        Dim pnt As IntPtr = Marshal.AllocHGlobal(size)
+        Marshal.StructureToPtr(SharedGetCurrentEx, pnt, False)
+        Dim bytes(size - 1) As Byte
+        Marshal.Copy(pnt, bytes, 0, size)
+        '共享内存
+        Dim ShareMemory As MemoryMappedFile = MemoryMappedFile.CreateOrOpen(strMapName, size)
+        Dim stream = ShareMemory.CreateViewStream(0, size)
+        Using MapView = ShareMemory.CreateViewAccessor()
+            MapView.WriteArray(0, bytes, 0, bytes.Length)
+        End Using
+```
+然后注入dll：
+```vb.net
+        Dim hRet = CreateProcess(FilePath, Nothing, pSecAttr, IntPtr.Zero, False, CREATE_SUSPENDED Or CREATE_NO_WINDOW, IntPtr.Zero, Nothing, si, pi)
+        If hRet = False Then
+            MsgBox("创建进程失败.")
+            Return False
+        End If
+        Dim hHandle = OpenProcess(PROCESS_ALL_ACCESS Or PROCESS_VM_OPERATION Or PROCESS_VM_READ Or PROCESS_VM_WRITE, False, pi.dwProcessId)
+        Dim hLoadLibrary = GetProcAddress(GetModuleHandle("Kernel32.dll"), "LoadLibraryA")
+        Dim pLibRemote = VirtualAllocEx(hHandle, IntPtr.Zero, DllPath.Length + 1, MEM_COMMIT, PAGE_READWRITE)
+        If pLibRemote.Equals(IntPtr.Zero) Then
+            MsgBox("申请目标进程空间失败.")
+            Return False
+        End If
+        Dim bytesWritten As New IntPtr
+        If WriteProcessMemory(hHandle, pLibRemote, ASCIIEncoding.ASCII.GetBytes(DllPath), DllPath.Length + 1, bytesWritten) = False Then
+            MsgBox("写入内存失败!")
+            Return False
+        End If
+        Dim dwThreadId As New IntPtr
+        Dim hRemoteThread = CreateRemoteThread(hHandle, IntPtr.Zero, 0, hLoadLibrary, pLibRemote, 0, dwThreadId)
+        Debug.Print("注入成功!")
+        WaitForSingleObject(hRemoteThread, 2000)
+```
+
