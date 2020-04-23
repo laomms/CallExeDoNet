@@ -23,5 +23,130 @@ vb.net中这样定义:
         Public dwSize As UInteger
     End Structure
 ```
+dll的源码跟之前的几乎一样，只是改了调用函数的方法：
+```c
+BOOL Compare64(const BYTE* pData, const BYTE* bMask, const char* szMask)
+{
+    for (; *szMask; ++szMask, ++pData, ++bMask)
+    {
+        if (*szMask == 'x' && *pData != *bMask)
+            return 0;
+    }
+    return (*szMask) == NULL;
+}
+
+DWORD64 FindPattern64(HMODULE hModule, BYTE* bMask, char* szMask)
+{
+    MODULEINFO moduleInfo = { 0 };
+    GetModuleInformation(GetCurrentProcess(), hModule, &moduleInfo, sizeof(MODULEINFO));
+    //GetModuleInformation(GetCurrentProcess(), GetModuleHandle(NULL), &moduleInfo, sizeof(MODULEINFO));
+    DWORD64 dwBaseAddress = (DWORD64)moduleInfo.lpBaseOfDll;
+    DWORD64 dwModuleSize = (DWORD64)moduleInfo.SizeOfImage;
+
+    for (DWORD64 i = 0; i < dwModuleSize; i++)
+    {
+        if (Compare64((BYTE*)(dwBaseAddress + i), bMask, szMask))
+            return (DWORD64)(dwBaseAddress + i);
+    }
+
+    return 0;
+}
+
+DWORD WINAPI MyThread(LPVOID)
+{
+     
+    AgrGetCurrentEx funcstruct1;
+    HANDLE hMapFile = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, strMapName);
+    if (!hMapFile)
+    {
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, ::GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        MessageBoxA(nullptr, messageBuffer, "DLL: Failed to open file mapping!", MB_OK | MB_ICONERROR);
+        LocalFree(messageBuffer);
+        return FALSE;
+    }
+    lpBuffer = (LPTSTR)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(funcstruct1));
+    if (!lpBuffer)
+    {
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, ::GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        MessageBoxA(nullptr, messageBuffer, "DLL: Failed to map shared memory!", MB_OK | MB_ICONERROR);
+        LocalFree(messageBuffer);
+        return FALSE;
+    }
+   
+
+    MODULEINFO modinfo = { 0 };
+    HMODULE hModule = GetModuleHandleA("clipup.exe");
+    if (hModule == 0)
+        return 0;
+   
+    if (funcstruct1.FuncFlag == 2)
+    {
+        ::CopyMemory(&funcstruct1, (char*)lpBuffer, sizeof(funcstruct1));
+        goto func2;
+    }
 
 
+func1:
+    {   
+        funcstruct1.FuncFlag = 0;
+        BYTE ByteGetCurrentEx[] = "\x48\x8B\xC4\x4C\x89\x48\x20\x4C\x89\x40\x18\x89\x50\x10\x48\x89\x48\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57";
+        char MaskGetCurrentEx[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+        DWORD64 pHwidGetCurrentEx = FindPattern64(hModule, ByteGetCurrentEx, MaskGetCurrentEx);
+        if (pHwidGetCurrentEx == 0)
+        {
+            LPSTR messageBuffer = nullptr;
+            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, ::GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+            MessageBoxA(nullptr, messageBuffer, "DLL: FindPattern no result!", MB_OK | MB_ICONERROR);
+            LocalFree(messageBuffer);
+            return FALSE;
+        }
+
+        typedef int(__stdcall* DelegateHwidGetCurrentEx)(unsigned __int8* , unsigned int , int**, unsigned int* , int**, unsigned int* ); //__cdecl
+        DelegateHwidGetCurrentEx MyHwidGetCurrentEx = (DelegateHwidGetCurrentEx)(static_cast<long long>(pHwidGetCurrentEx));
+        int* structHWID;
+        unsigned int sizeHWID;
+
+        int result = MyHwidGetCurrentEx(NULL, 0, &structHWID, &sizeHWID, 0, 0);
+        if (result != 0)
+        {
+            char buffer[32];
+            sprintf_s(buffer, "%d", result);
+            MessageBoxA(NULL, buffer, "DllTitle", MB_ICONINFORMATION);
+            return FALSE;
+        }
+        ::memcpy(funcstruct1.structHWID, structHWID, sizeof(funcstruct1.structHWID));
+        ::memcpy(funcstruct1.sizeHWID, (unsigned char*)&sizeHWID, 2);
+        goto MapFile;
+    }
+   
+
+func2:
+    {
+       
+    }
+
+MapFile:
+    hMapFile = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(funcstruct2), strMapName);
+    if (hMapFile == nullptr) {
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, ::GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        MessageBoxA(nullptr, messageBuffer, "DLL: Failed to create file mapping!", MB_OK | MB_ICONERROR);
+        LocalFree(messageBuffer);
+        return FALSE;
+    }
+    lpMemFile = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    if (lpMemFile == nullptr) {
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, ::GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        MessageBoxA(nullptr, messageBuffer, "DLL: Failed to map shared memory!", MB_OK | MB_ICONERROR);
+        LocalFree(messageBuffer);
+        return FALSE;
+    }
+
+    memset(lpMemFile, 0, sizeof(funcstruct1));
+    ::memcpy(lpMemFile, &funcstruct1, sizeof(AgrGetCurrentEx));
+    return 0;
+}
+```
