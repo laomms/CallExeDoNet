@@ -1,9 +1,9 @@
 # 调用exe内部函数.net版
 
-之前写了个c++主程序调用一个exe内部函数的例子，现在改用.net当主程序实现，主要是实现跨版本的数据交流及dll注入，dll还是用c++实现，如果想用托管的dll，必须写个非托管的clr当中介调用.net dll来实现。毕竟目标程序是c/c++。  
+之前写了个c++主程序调用一个exe内部函数的例子，现在改用.net当主程序实现，主要是实现跨版本的数据交流及dll注入，dll还是用c++实现，如果想用托管的dll，必须写个非托管的clr当中介调用.net dll来实现。毕竟目标程序是c/c++。   
 这里要实现从系统自带的clipup.exe中调用一个函数HwidGetCurrentEx，这个函数返回的是一个HWID结构，是微软用于认证每台机子的主要硬件标志。   
-IDA分析后函数的参数大概这样，而且是个stdcall，比较好弄，先把特征码弄过来。  
-![image](https://github.com/laomms/CallExeDoNet/blob/master/01.png) 
+IDA分析后函数的参数大概这样，而且是个stdcall，比较好弄，先把特征码弄过来。   
+![image](https://github.com/laomms/CallExeDoNet/blob/master/01.png)   
 我用vb.net实现，C#和vb.net现在已经没什么区别了，用Tangible的工具互转已经几乎达到100%，不管是整个工程还是代码互转，剩下稍微手工修改几处就可以。  
 先看参数，总共6个，经过IDA调试分析，主要要得到其中的structHWID和sizeHWID，structHWID是个64位的结构体，微软没有公布这个结构体，那就拿整体来用，sizeHWID是结构体大小。  
 在这里构造一个用于传递的结构体，这里的第一个参数是备用的，用于标志调用不同的函数，比如注入后调用的不止一个函数，就用这个来区分注入时是调用哪个函数。其他参数没什么用，不用传递，就不写进去了。  
@@ -149,7 +149,7 @@ MapFile:
     return 0;
 }
 ```
-fun2是为了后续调用其他函数。
+fun2是为了后续调用其他函数。  
 主程序先共享内存,由于这个函数没有输入参数，只有输出参数，所以没必须传其他的东西给DLL:
 ```vb.net
         Dim SharedGetCurrentEx As New AgrGetCurrentEx()
@@ -202,9 +202,9 @@ fun2是为了后续调用其他函数。
             Marshal.FreeHGlobal(pnt)
         End Using
 ```
-CREATE_SUSPENDED是为了创建目标进程后马上挂起，CREATE_NO_WINDOW是为了运行目标进程时不显示窗口。
-注入后，上面的SharedGetCurrentEx结构体中的structHWID已经是取到的HWID结果。
-为了测试dll调用函数有没有成功，CreateProcess目标进程后，在CreateRemoteThread之前下个断点，然后在dll的调用函数处下断点，看有没有调用成功，注意的是得附加目标进程调试，否则dll调试不了，因为已经被注入到目标进程。dll被断下：
+CREATE_SUSPENDED是为了创建目标进程后马上挂起，CREATE_NO_WINDOW是为了运行目标进程时不显示窗口。  
+注入后，上面的SharedGetCurrentEx结构体中的structHWID已经是取到的HWID结果。  
+为了测试dll调用函数有没有成功，CreateProcess目标进程后，在CreateRemoteThread之前下个断点，然后在dll的调用函数处下断点，看有没有调用成功，注意的是得附加目标进程调试，否则dll调试不了，因为已经被注入到目标进程。dll被断下：  
 ![image](https://github.com/laomms/CallExeDoNet/blob/master/02.png) 
 主程序断下后的结果：
 ![image](https://github.com/laomms/CallExeDoNet/blob/master/03.png) 
