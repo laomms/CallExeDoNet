@@ -168,6 +168,7 @@ fun2是为了后续调用其他函数。
 ```
 然后注入dll：
 ```vb.net
+        Dim FilePath = Environment.SystemDirectory & "\ClipUp.exe"
         Dim hRet = CreateProcess(FilePath, Nothing, pSecAttr, IntPtr.Zero, False, CREATE_SUSPENDED Or CREATE_NO_WINDOW, IntPtr.Zero, Nothing, si, pi)
         If hRet = False Then
             MsgBox("创建进程失败.")
