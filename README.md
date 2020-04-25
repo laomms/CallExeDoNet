@@ -73,11 +73,10 @@ BOOL Compare64(const BYTE* pData, const BYTE* bMask, const char* szMask)
     return (*szMask) == NULL;
 }
 
-DWORD64 FindPattern64(HMODULE hModule, BYTE* bMask, char* szMask)
+DWORD64 FindPattern64( BYTE* bMask, char* szMask)
 {
     MODULEINFO moduleInfo = { 0 };
-    GetModuleInformation(GetCurrentProcess(), hModule, &moduleInfo, sizeof(MODULEINFO));
-    //GetModuleInformation(GetCurrentProcess(), GetModuleHandle(NULL), &moduleInfo, sizeof(MODULEINFO));
+    GetModuleInformation(GetCurrentProcess(), GetModuleHandle(NULL), &moduleInfo, sizeof(MODULEINFO));
     DWORD64 dwBaseAddress = (DWORD64)moduleInfo.lpBaseOfDll;
     DWORD64 dwModuleSize = (DWORD64)moduleInfo.SizeOfImage;
     for (DWORD64 i = 0; i < dwModuleSize; i++)
@@ -114,10 +113,6 @@ DWORD WINAPI MyThread(LPVOID)
     }
     memcpy(&funcstruct, lpBuffer, SharedSize);
 
-    MODULEINFO modinfo = { 0 };
-    HMODULE hModule =GetModuleHandle(NULL); // GetModuleHandle(L"clipup.exe");
-    if (hModule == 0)
-        return 0;   
     if (funcstruct.FuncFlag == 2)
     {
         goto func2;
@@ -131,7 +126,7 @@ func1:
     {     
         BYTE ByteGetCurrentEx[] = "\x48\x8B\xC4\x4C\x89\x48\x20\x4C\x89\x40\x18\x89\x50\x10\x48\x89\x48\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8B\xEC\x48\x83\xEC\x48";
         char MaskGetCurrentEx[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-        DWORD64 pHwidGetCurrentEx = FindPattern64(hModule, ByteGetCurrentEx, MaskGetCurrentEx);
+        DWORD64 pHwidGetCurrentEx = FindPattern64(ByteGetCurrentEx, MaskGetCurrentEx);
         if (pHwidGetCurrentEx == 0)
         {
             LPSTR messageBuffer = nullptr;
@@ -164,7 +159,7 @@ func2:
     {      
         BYTE ByteVRSAVaultSignPKCS[] = "\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x57\x41\x56\x41\x57\x48\x83\xEC\x20\x4C\x8B\x74\x24\x00\x4D\x8B\xF9\x49\x8B\xD8\x8B\xFA\x48\x8B\xE9\x45\x8B\x16\x41\x8D\x72\xFE\x41\x8D\x42\xFF\x42\xC6\x04\x00\x00";
         char MaskVRSAVaultSignPKCS[] = "xxxx?xxxx?xxxx?xxxxxxxxxxxxx?xxxxxxxxxxxxxxxxxxxxxxxxxx?";
-        DWORD64 pVRSAVaultSignPKCS = FindPattern64(hModule, ByteVRSAVaultSignPKCS, MaskVRSAVaultSignPKCS);
+        DWORD64 pVRSAVaultSignPKCS = FindPattern64( ByteVRSAVaultSignPKCS, MaskVRSAVaultSignPKCS);
         if (pVRSAVaultSignPKCS == 0)
         {
             LPSTR messageBuffer = nullptr;
@@ -197,7 +192,7 @@ func3:
     {
         BYTE ByteCreateGenuineTicketClient[] = "\x48\x89\x5C\x24\x00\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x00\x00\x00\x00\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x05\x00\x00\x00\x00\x48\x33\xC4\x48\x89\x85\x00\x00\x00\x00\x45\x33\xFF\x4D\x8B\xE0\x4C\x8B\xF1\x4C\x89\x7D\x98";
         char MaskCreateGenuineTicketClient[] = "xxxx?xxxxxxxxxxxxxxx????xxx????xxx????xxxxxx????xxxxxxxxxxxxx";
-        DWORD64 pCreateGenuineTicketClient = FindPattern64(hModule, ByteCreateGenuineTicketClient, MaskCreateGenuineTicketClient);
+        DWORD64 pCreateGenuineTicketClient = FindPattern64(ByteCreateGenuineTicketClient, MaskCreateGenuineTicketClient);
         if (pCreateGenuineTicketClient == 0)
         {
             LPSTR messageBuffer = nullptr;
