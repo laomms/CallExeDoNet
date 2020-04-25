@@ -266,7 +266,6 @@ dll取到共享的内存后以结构体的第一个参数来区分调用的函�
         
         '共享到内存
         Dim ShareMemory As MemoryMappedFile = MemoryMappedFile.CreateOrOpen(strMapName, size)
-        Dim stream = ShareMemory.CreateViewStream(0, size)
         Using MapView = ShareMemory.CreateViewAccessor()
             MapView.WriteArray(0, bytes, 0, bytes.Length)
         End Using
@@ -389,7 +388,6 @@ Private Function dllinjecton(AgrList As AgrListStruct, DllPath As String, ExePat
         Marshal.Copy(pnt, bytes, 0, size)
 
         Dim ShareMemory As MemoryMappedFile = MemoryMappedFile.CreateOrOpen(strMapName, size)
-        Dim stream = ShareMemory.CreateViewStream(0, size)
         Using MapView = ShareMemory.CreateViewAccessor()
             MapView.WriteArray(0, bytes, 0, bytes.Length)
         End Using
