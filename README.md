@@ -247,19 +247,24 @@ dll取到共享的内存后以结构体的第一个参数来区分调用的函�
 ```vb.net
         Dim AgrList As New AgrListStruct()
         '第一个函数没有输入参数，只有返回参数：
-         AgrList.FuncFlag = 3 = 1
+         AgrList.FuncFlag =  1
         '第二个函数输入的是数组和数组大小，返回数组：
-        'AgrList.FuncFlag = 3 = 2
-        'AgrList.f2.pbData = New Byte() {&H27,....}
+        'AgrList.FuncFlag =  2
+        'AgrList.f2.pbData = New Byte() {&H27,....}        
         'AgrList.f2.dwSize = 32
         '第三个函数输入的是字符串，返回的也是字符串：
-        'AgrList.f3.Src = "abcd...""        
+        'AgrList.FuncFlag =  3
+        'AgrList.f3.Src = "abcd...""     
+        
+        '转换成数组
         Dim size As Integer = Marshal.SizeOf(SharedGetCurrentEx)
         Dim pnt As IntPtr = Marshal.AllocHGlobal(size)
         Marshal.StructureToPtr(SharedGetCurrentEx, pnt, False)
         Dim bytes(size - 1) As Byte
         Marshal.Copy(pnt, bytes, 0, size)
-        '共享内存
+        
+        
+        '共享到内存
         Dim ShareMemory As MemoryMappedFile = MemoryMappedFile.CreateOrOpen(strMapName, size)
         Dim stream = ShareMemory.CreateViewStream(0, size)
         Using MapView = ShareMemory.CreateViewAccessor()
@@ -322,6 +327,7 @@ dll取到共享的内存后以结构体的第一个参数来区分调用的函�
 注入后，等dll执行完毕分享内存后提取共享的内存:
 
 ```vb.net
+        '根据共享名提取dll共享的内存
         ShareMemory = MemoryMappedFile.OpenExisting(strMapName)
         Using MapView = ShareMemory.CreateViewStream()
             Dim BytesBuffer(size - 1) As Byte
