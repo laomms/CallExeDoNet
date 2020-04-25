@@ -90,7 +90,9 @@ DWORD64 FindPattern64(HMODULE hModule, BYTE* bMask, char* szMask)
 
 DWORD WINAPI MyThread(LPVOID)
 {     
-    AgrGetCurrentEx funcstruct1;
+    AgrListStruct funcstruct;
+    DWORD SharedSize = sizeof(AgrListStruct);
+    //struct AgrListStruct* funcPtr = (struct AgrListStruct*)malloc(sizeof(struct AgrListStruct) + (SharedSize - 1));
     HANDLE hMapFile = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, strMapName);
     if (!hMapFile)
     {
@@ -100,7 +102,8 @@ DWORD WINAPI MyThread(LPVOID)
         LocalFree(messageBuffer);
         return FALSE;
     }
-    lpBuffer = (LPTSTR)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(funcstruct1));
+
+    lpBuffer = (LPTSTR)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SharedSize);
     if (!lpBuffer)
     {
         LPSTR messageBuffer = nullptr;
@@ -109,11 +112,10 @@ DWORD WINAPI MyThread(LPVOID)
         LocalFree(messageBuffer);
         return FALSE;
     }
-   
     memcpy(&funcstruct, lpBuffer, SharedSize);
 
     MODULEINFO modinfo = { 0 };
-    HMODULE hModule = GetModuleHandle(L"gatherosstate64.exe");
+    HMODULE hModule =GetModuleHandle(NULL); // GetModuleHandle(L"clipup.exe");
     if (hModule == 0)
         return 0;   
     if (funcstruct.FuncFlag == 2)
@@ -124,7 +126,6 @@ DWORD WINAPI MyThread(LPVOID)
     {
         goto func3;
     }
-
 
 func1:
     {     
