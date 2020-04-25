@@ -61,7 +61,7 @@ vb.net中这样定义，必须要一致，方便指针与结构体的互转。
     End Structure
     Public strMapName As String = "global_share_memory"
 ```
-dll的源码跟之前的几乎一样，只是改了调用函数的方法：
+dll的源码跟之前的几乎一样，只是改了调用函数的方法，完整代码：
 ```c
 BOOL Compare64(const BYTE* pData, const BYTE* bMask, const char* szMask)
 {
