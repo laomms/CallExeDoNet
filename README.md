@@ -254,7 +254,7 @@ dll取到共享的内存后以结构体的第一个参数来区分调用的函�
         'AgrList.f2.dwSize = 32
         '第三个函数输入的是字符串，返回的也是字符串：
         'AgrList.FuncFlag =  3
-        'AgrList.f3.Src = "abcd...""     
+        'AgrList.f3.Src = "abcd..."     
         
         '转换成数组
         Dim size As Integer = Marshal.SizeOf(SharedGetCurrentEx)
