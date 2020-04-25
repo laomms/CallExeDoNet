@@ -339,4 +339,90 @@ CREATE_SUSPENDED是为了创建目标进程后马上挂起，CREATE_NO_WINDOW是
 主程序断下后的结果：
 ![image](https://github.com/laomms/CallExeDoNet/blob/master/03.png) 
 
+vb.net完整代码：
+```vb.net
+    Public Structure AgrListStruct
+        Public FuncFlag As Integer
+        Public f1 As Func1
+        Public f2 As Func2
+        Public f3 As Func3
+    End Structure
+    Public Structure Func1
+        <MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst:=64)> Public structHWID() As Byte
+        Public sizeHWID As UInteger
+    End Structure
+    Public Structure Func2
+        <MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst:=32)> Public pbData() As Byte
+        Public dwSize As Integer
+        <MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst:=256)> Public pbDst() As Byte
+        Public sizeDst As UInteger
+    End Structure
+    Public Structure Func3
+        <MarshalAsAttribute(UnmanagedType.ByValTStr, SizeConst:=1000)> Public Src As String
+        <MarshalAsAttribute(UnmanagedType.ByValTStr, SizeConst:=1024)> Public pbData As String
+        Public DataSize As UInteger
+    End Structure
+    
+Private Function dllinjecton(AgrList As AgrListStruct, DllPath As String, ExePath As String) As AgrListStruct
+        Dim SecAttr As New SECURITY_ATTRIBUTES
+        Dim SecDesc As New SECURITY_DESCRIPTOR
+        Dim pSecAttr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(SecAttr))
+        If InitializeSecurityDescriptor(SecDesc, SECURITY_DESCRIPTOR_REVISION) AndAlso SetSecurityDescriptorDacl(SecDesc, True, IntPtr.Zero, False) Then
+            Dim SecDescPtr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(SecDesc))
+            Marshal.StructureToPtr(SecDesc, SecDescPtr, False)
+            SecAttr.nLength = Marshal.SizeOf(SecAttr)
+            SecAttr.lpSecurityDescriptor = SecDescPtr
+            SecAttr.bInheritHandle = True
+            Marshal.StructureToPtr(SecAttr, pSecAttr, True)
+        End If
 
+        Dim size As Integer = Marshal.SizeOf(AgrList)
+        Dim pnt As IntPtr = Marshal.AllocHGlobal(size)
+        Marshal.StructureToPtr(AgrList, pnt, False)
+        Dim bytes(size - 1) As Byte
+        Marshal.Copy(pnt, bytes, 0, size)
+
+        Dim ShareMemory As MemoryMappedFile = MemoryMappedFile.CreateOrOpen(strMapName, size)
+        Dim stream = ShareMemory.CreateViewStream(0, size)
+        Using MapView = ShareMemory.CreateViewAccessor()
+            MapView.WriteArray(0, bytes, 0, bytes.Length)
+        End Using
+
+        Dim si As New STARTUPINFO()
+        Dim pi As New PROCESS_INFORMATION()
+        Dim hRet = CreateProcess(ExePath, Nothing, pSecAttr, IntPtr.Zero, False, CREATE_SUSPENDED, IntPtr.Zero, Nothing, si, pi) 'DEBUG_ONLY_THIS_PROCESS Or DEBUG_PROCESS Or CREATE_NO_WINDOW
+        If hRet = False Then
+            MsgBox("创建进程失败.")
+            Return Nothing
+        End If
+        Dim hHandle = OpenProcess(PROCESS_ALL_ACCESS Or PROCESS_VM_OPERATION Or PROCESS_VM_READ Or PROCESS_VM_WRITE, False, pi.dwProcessId)
+        Dim hLoadLibrary = GetProcAddress(GetModuleHandle("Kernel32.dll"), "LoadLibraryA")
+        Dim pLibRemote = VirtualAllocEx(hHandle, IntPtr.Zero, DllPath.Length + 1, MEM_COMMIT, PAGE_READWRITE)
+        If pLibRemote.Equals(IntPtr.Zero) Then
+            MsgBox("申请目标进程空间失败.")
+            Return Nothing
+        End If
+        Dim bytesWritten As New IntPtr
+        If WriteProcessMemory(hHandle, pLibRemote, ASCIIEncoding.ASCII.GetBytes(DllPath), DllPath.Length + 1, bytesWritten) = False Then
+            MsgBox("写入内存失败!")
+            Return Nothing
+        End If
+
+        Dim dwThreadId As New IntPtr
+        Dim hRemoteThread = CreateRemoteThread(hHandle, IntPtr.Zero, 0, hLoadLibrary, pLibRemote, 0, dwThreadId)
+        WaitForSingleObject(hRemoteThread, 0)
+        Sleep(500)
+
+        ShareMemory = MemoryMappedFile.OpenExisting(strMapName)
+        Using MapView = ShareMemory.CreateViewStream()
+            Dim BytesBuffer(size - 1) As Byte
+            MapView.Read(BytesBuffer, 0, size)
+            Marshal.Copy(BytesBuffer, 0, pnt, size)
+            AgrList = Marshal.PtrToStructure(pnt, GetType(AgrListStruct))
+            Marshal.FreeHGlobal(pnt)
+        End Using
+        ResumeThread(pi.hThread)
+        Marshal.FreeHGlobal(pSecAttr)
+        Return AgrList
+    End Function
+```
