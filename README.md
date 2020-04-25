@@ -5,8 +5,8 @@
 IDA分析后函数的参数大概这样。参数和函数调用约定等照抄。其他两个函数就不一一列出。
 ![image](https://github.com/laomms/CallExeDoNet/blob/master/01.png)   
 我用vb.net实现，C#和vb.net现在已经没什么区别了，用Tangible的工具互转已经几乎达到100%，不管是整个工程还是代码互转，剩下稍微手工修改几处就可以。  
-先看参数，总共6个，经过IDA调试分析，主要要得到其中的structHWID和sizeHWID，structHWID是个64位的结构体，微软没有公布这个结构体，那就拿整体来用，sizeHWID是结构体大小。  
-在这里构造一个用于传递的结构体，这里的第一个参数是指定注入时调用哪个函数。其他三个子结构是三个函数的参数。  
+这里以第一个函数为例子，先看参数，总共6个，经过IDA调试分析，主要要得到其中的structHWID和sizeHWID，structHWID是个64位的结构体，微软没有公布这个结构体，那就拿整体来用，sizeHWID是结构体大小。  
+在这里构造一个用于传递参数的结构体，第一个参数是指定注入时调用哪个函数。其他三个子结构是三个函数的参数。  
 ```c
 typedef struct func1
 {
@@ -27,13 +27,13 @@ typedef struct func3
     unsigned DataSize;
 };
 
-typedef struct  
+typedef struct AgrListStruct
 {
     int FuncFlag;
     func1 f1;
     func2 f2;
     func3 f3;
-}AgrListStruct;
+};
 #define strMapName "global_share_memory"
 ```
 vb.net中这样定义，必须要一致，方便指针与结构体的互转。
